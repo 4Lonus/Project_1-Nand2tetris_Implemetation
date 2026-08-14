@@ -131,8 +131,7 @@ CHIP ALUextendida {
 
         //And we choose if normal ALU or Extended
         Mux16(a=outALU,  b=outALUext,  sel=a,  out=out,
-            out[0..7]=low8, out[8..15]=high8, out[15]=ngExt);
-        Mux(a=ngALU, b=ngExt, sel=a, out=ng);
+            out[0..7]=low8, out[8..15]=high8, out[15]=ng);
 
     // Is it zero? this works, so we don't touch it.
     Or8Way(in=low8, out=low);
