@@ -109,8 +109,8 @@ CHIP ALUextendida {
             And(a=r4,  b=no,   out=isNOR);
 
             // EQ = 101000
-            And(a=zx,  b=nx,   out=e1);
-            And(a=e1,  b=nzy,  out=e2);
+            And(a=zx,  b=nnx,   out=e1);
+            And(a=e1,  b=zy,  out=e2);
             And(a=e2,  b=nny, out=e3);
             And(a=e3,  b=nf,  out=e4);
             And(a=e4,  b=nno,  out=isEQ);
