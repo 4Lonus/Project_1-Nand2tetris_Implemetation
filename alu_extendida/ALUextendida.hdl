@@ -102,11 +102,11 @@ CHIP ALUextendida {
             And(a=n4,  b=no,  out=isNAND);
 
             // NOR = 110100
-            And(a=zx,  b=nnx, out=r1);
-            And(a=r1,  b=zy,   out=r2);
-            And(a=r2,  b=nny,  out=r3);
+            And(a=zx,  b=nx, out=r1);
+            And(a=r1,  b=nzy,   out=r2);
+            And(a=r2,  b=ny,  out=r3);
             And(a=r3,  b=nf,   out=r4);
-            And(a=r4,  b=no,   out=isNOR);
+            And(a=r4,  b=nno,   out=isNOR);
 
             // EQ = 101000
             And(a=zx,  b=nnx,   out=e1);
@@ -119,8 +119,8 @@ CHIP ALUextendida {
             And(a=zx,  b=nnx, out=a1);
             And(a=a1,  b=nzy,  out=a2);
             And(a=a2,  b=nny, out=a3);
-            And(a=a3,  b=nf,  out=a4);
-            And(a=a4,  b=no,   out=isABS);
+            And(a=a3,  b=f,  out=a4);
+            And(a=a4,  b=nno,   out=isABS);
 
         // The default output is ALU, but we override if we find other codes
         Mux16(a=outALU, b=outXOR,  sel=isXOR,  out=step1);
