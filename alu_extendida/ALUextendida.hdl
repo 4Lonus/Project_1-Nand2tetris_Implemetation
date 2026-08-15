@@ -1,141 +1,137 @@
 CHIP ALUextendida {
-    IN  
-        x[16], y[16],  // 16-bit inputs
-        a, // which i'm guessing it's the selector for the extended ALU but we were told not to use it, however i'll leave my version there as a bonus =D
-        zx, // zero the x input?
-        nx, // negate the x input?
-        zy, // zero the y input?
-        ny, // negate the y input?
-        f,  // compute (out = x + y) or (out = x & y)?
-        no; // negate the out output?
-    OUT 
-        out[16], // 16-bit output
-        zr,      // if (out == 0) equals 1, else 0
-        ng;      // if (out < 0)  equals 1, else 0
+	IN
+		x[16], y[16],	// 16-bit inputs
+		a,				// which i'm guessing it's the selector for the extended ALU but we were told not to use it, however i'll leave my version there as a bonus =D
+		zx,				// zero the x input?
+		nx,				// negate the x input?
+		zy,				// zero the y input?
+		ny,				// negate the y input?
+		f,				// compute (out = x + y) or (out = x & y)?
+		no;				// negate the out output?
+	OUT
+		out[16],	// 16-bit output
+		zr,			// if (out == 0) equals 1, else 0
+		ng;			// if (out < 0)  equals 1, else 0
 
-    PARTS:
-    // Normal ALU
-        // Handling X
-        Mux16(a=x, b=false, sel=zx, out=xORzero);
-        Not16(in=xORzero, out=notX);
-        Mux16(a=xORzero, b=notX, sel=nx, out=finalX);
-        
-        // Handling Y
-        Mux16(a=y, b=false, sel=zy, out=yORzero);
-        Not16(in=yORzero, out=notY);
-        Mux16(a=yORzero, b=notY, sel=ny, out=finalY);
+	PARTS:
+	// NORMAL ALU
+		// Handling X
+		Mux16(a=x, b=false, sel=zx, out=xORzero);
+		Not16(in=xORzero, out=notX);
+		Mux16(a=xORzero, b=notX, sel=nx, out=finalX);
 
-        // Addition
-        Add16(a=finalX, b=finalY, out=addition);
+		// Handling Y
+		Mux16(a=y, b=false, sel=zy, out=yORzero);
+		Not16(in=yORzero, out=notY);
+		Mux16(a=yORzero, b=notY, sel=ny, out=finalY);
 
-        // And 16-bitwise
-        And16(a=finalX, b=finalY, out=and);
+		// Addition
+		Add16(a=finalX, b=finalY, out=addition);
 
-        // We dice which
-        Mux16(a=and, b=addition, sel=f, out=addORand);
+		// And 16-bitwise
+		And16(a=finalX, b=finalY, out=and);
 
-        // Negative output?
-        Not16(in=addORand, out=notOut);
-        Mux16(a=addORand, b=notOut, sel=no, out=outALU,
-        // Aditional outputs (for no and zr)
-        out[0..7]=lowALU8, out[8..15]=highALU8,
-        // Is it negative? (the MSD digit (15) is the negative symbol)
-        out[15]=ngALU);
-    
-    // Extended ALU
-        // We compute the extended ops
-        // XOR
-            Not16(in=x, out=nX);
-            Not16(in=y, out=nY);
-            And16(a=nX, b=y, out=or1);
-            And16(a=x, b=nY, out=or2);
-            Or16(a=or1, b=or2, out=outXOR);
+		// We dice which
+		Mux16(a=and, b=addition, sel=f, out=addORand);
 
-        // NAND
-            And16(a=x, b=y, out=andExt);
-            Not16(in=andExt, out=outNAND);
+		// Negate output?
+		Not16(in=addORand, out=notOut);
+		Mux16(a=addORand, b=notOut, sel=no, out=outALU);
+	
+	// EXTENDED ALU
+		// We compute the extended ops
+		// XOR
+			Not16(in=x, out=nX);
+			Not16(in=y, out=nY);
+			And16(a=nX, b=y, out=or1);
+			And16(a=x, b=nY, out=or2);
+			Or16(a=or1, b=or2, out=outXOR);
 
-        // NOR
-            Or16(a=x, b=y, out=orExt);
-            Not16(in=orExt, out=outNOR);
+		// NAND
+			And16(a=x, b=y, out=andExt);
+			Not16(in=andExt, out=outNAND);
 
-        // EQ
-            // The Difference
-            Inc16(in=nY, out=negY);
-            Add16(a=x, b=negY, out[0..7]=diffLow, out[8..15]=diffHigh);
+		// NOR
+			Or16(a=x, b=y, out=orExt);
+			Not16(in=orExt, out=outNOR);
 
-            // Is zero? (aka equal)
-            Or8Way(in=diffLow, out=eqLow);
-            Or8Way(in=diffHigh, out=eqhigh);
-            Or(a=eqLow, b=eqhigh, out=iszero);
-            Not(in=iszero, out=isEqual);
+		// EQ
+			// The Difference
+			Inc16(in=nY, out=negY);
+			Add16(a=x, b=negY, out[0..7]=diffLow, out[8..15]=diffHigh);
 
-            // for the 000..0/1
-            Mux16(a=false, b=true, sel=isEqual, out=outEQ);
+			// Is zero? (aka equal)
+			Or8Way(in=diffLow, out=eqLow);
+			Or8Way(in=diffHigh, out=eqhigh);
+			Or(a=eqLow, b=eqhigh, out=iszero);
+			Not(in=iszero, out=isEqual);
 
-        // ABS
-            Inc16(in=nX, out=negX);
-            Mux16(a=x, b=negX, sel=x[15], out=outABS);
+			// for the 000..0/1
+			Mux16(a=false, b[15]=true, sel=isEqual, out=outEQ);
 
-        // We select which one to use (this one is long)
-            // The negations
-            Not(in=zx, out=nzx);
-            Not(in=nx, out=nnx);
-            Not(in=zy, out=nzy);
-            Not(in=ny, out=nny);
-            Not(in=f, out=nf);
-            Not(in=no, out=nno);
+		// ABS
+			Inc16(in=nX, out=negX);
+			Mux16(a=x, b=negX, sel=x[15], out=outABS);
 
-            // zx,nx,zy,ny,f,no
-            // XOR = 010110
-            And(a=nzx, b=nx,  out=s1);
-            And(a=s1,  b=nzy, out=s2);
-            And(a=s2,  b=ny,  out=s3);
-            And(a=s3,  b=f,   out=s4);
-            And(a=s4,  b=nno, out=isXOR);
+		// We select which one to use (this one is long)
+			// The negations
+			Not(in=zx, out=nzx);
+			Not(in=nx, out=nnx);
+			Not(in=zy, out=nzy);
+			Not(in=ny, out=nny);
+			Not(in=f, out=nf);
+			Not(in=no, out=nno);
 
-            // NAND = 000001
-            And(a=nzx, b=nnx, out=n1);
-            And(a=n1,  b=nzy, out=n2);
-            And(a=n2,  b=nny, out=n3);
-            And(a=n3,  b=nf,  out=n4);
-            And(a=n4,  b=no,  out=isNAND);
+			// zx,nx,zy,ny,f,no
+			// XOR = 010110
+			And(a=nzx, b=nx,  out=s1);
+			And(a=s1,  b=nzy, out=s2);
+			And(a=s2,  b=ny,  out=s3);
+			And(a=s3,  b=f,   out=s4);
+			And(a=s4,  b=nno, out=isXOR);
 
-            // NOR = 110100
-            And(a=zx,  b=nx, out=r1);
-            And(a=r1,  b=nzy,   out=r2);
-            And(a=r2,  b=ny,  out=r3);
-            And(a=r3,  b=nf,   out=r4);
-            And(a=r4,  b=nno,   out=isNOR);
+			// NAND = 000001
+			And(a=nzx, b=nnx, out=n1);
+			And(a=n1,  b=nzy, out=n2);
+			And(a=n2,  b=nny, out=n3);
+			And(a=n3,  b=nf,  out=n4);
+			And(a=n4,  b=no,  out=isNAND);
 
-            // EQ = 101000
-            And(a=zx,  b=nnx,   out=e1);
-            And(a=e1,  b=zy,  out=e2);
-            And(a=e2,  b=nny, out=e3);
-            And(a=e3,  b=nf,  out=e4);
-            And(a=e4,  b=nno,  out=isEQ);
+			// NOR = 110100
+			And(a=zx,  b=nx, out=r1);
+			And(a=r1,  b=nzy,   out=r2);
+			And(a=r2,  b=ny,  out=r3);
+			And(a=r3,  b=nf,   out=r4);
+			And(a=r4,  b=nno,   out=isNOR);
 
-            // ABS = 100010
-            And(a=zx,  b=nnx, out=a1);
-            And(a=a1,  b=nzy,  out=a2);
-            And(a=a2,  b=nny, out=a3);
-            And(a=a3,  b=f,  out=a4);
-            And(a=a4,  b=nno,   out=isABS);
+			// EQ = 101000
+			And(a=zx,  b=nnx,   out=e1);
+			And(a=e1,  b=zy,  out=e2);
+			And(a=e2,  b=nny, out=e3);
+			And(a=e3,  b=nf,  out=e4);
+			And(a=e4,  b=nno,  out=isEQ);
 
-        // We choose which one of the outputs is the coorect
-        Mux16(a=false, b=outXOR,  sel=isXOR,  out=step1);
-        Mux16(a=step1,  b=outNAND, sel=isNAND, out=step2);
-        Mux16(a=step2,  b=outNOR,  sel=isNOR,  out=step3);
-        Mux16(a=step3,  b=outEQ,   sel=isEQ,   out=step4);
-        Mux16(a=step4, b=outABS, sel=isABS, out=outALUext);
+			// ABS = 100010
+			And(a=zx,  b=nnx, out=a1);
+			And(a=a1,  b=nzy,  out=a2);
+			And(a=a2,  b=nny, out=a3);
+			And(a=a3,  b=f,  out=a4);
+			And(a=a4,  b=nno,   out=isABS);
 
-        //And we choose if normal ALU or Extended
-        Mux16(a=outALU,  b=outALUext,  sel=a,  out=out,
-            out[0..7]=low8, out[8..15]=high8, out[15]=ng);
+		// We choose which one of the outputs is the coorect
+		Mux16(a=false, b=outXOR,  sel=isXOR,  out=step1);
+		Mux16(a=step1,  b=outNAND, sel=isNAND, out=step2);
+		Mux16(a=step2,  b=outNOR,  sel=isNOR,  out=step3);
+		Mux16(a=step3,  b=outEQ,   sel=isEQ,   out=step4);
+		Mux16(a=step4, b=outABS, sel=isABS, out=outALUext);
 
-    // Is it zero? this works, so we don't touch it.
-    Or8Way(in=low8, out=low);
-    Or8Way(in=high8, out=high);
-    Or(a=low, b=high, out=hasBits);
-    Not(in=hasBits, out=zr);
+		//And we choose if normal ALU or Extended
+		Mux16(a=outALU,  b=outALUext,  sel=a,  out=out,
+			out[0..7]=low8, out[8..15]=high8, out[15]=ng);
+
+	// Is it zero? this works, so we don't touch it.
+	Or8Way(in=low8, out=low);
+	Or8Way(in=high8, out=high);
+	Or(a=low, b=high, out=hasBits);
+	Not(in=hasBits, out=zr);
 }
