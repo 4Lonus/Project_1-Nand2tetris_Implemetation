@@ -67,7 +67,7 @@ CHIP ALUextendida {
 			Not(in=iszero, out=isEqual);
 
 			// for the 000..0/1
-			Mux16(a=false, b[15]=true, sel=isEqual, out=outEQ);
+			Mux16(a=false, b[0]=true, sel=isEqual, out=outEQ);
 
 		// ABS
 			Inc16(in=nX, out=negX);
